@@ -1,9 +1,9 @@
 # Adversarial Reward Hacking Detection & Mitigation in LLMs
 
-**V3 Protocol — Target-Conditioned Semantic Adversarial Discovery & Retention-Aware Continual Auditing**
+**V4 Protocol — Multi-Domain, Closed-Loop Adversarial Interaction & Continual Auditing**
 
-[![Tests](https://img.shields.io/badge/tests-40%20passed-brightgreen)](#testing)
-[![Protocol](https://img.shields.io/badge/protocol-V3-blue)](#protocol)
+[![Tests](https://img.shields.io/badge/tests-60%20passed-brightgreen)](#testing)
+[![Protocol](https://img.shields.io/badge/protocol-V4%20Multi--Domain-blue)](#protocol)
 [![GPU](https://img.shields.io/badge/GPU-RTX%203060%20100%25-green)](#hardware)
 [![Python](https://img.shields.io/badge/python-3.12-blue)](#setup)
 
@@ -11,20 +11,25 @@
 
 ## Overview
 
-This repository provides a **self-contained, reproducible benchmark and evaluation framework** for empirically studying **adversarially induced proxy-reward exploitation (reward hacking)** in autonomous LLM coding agents.
+This repository provides a **self-contained, reproducible benchmark and empirical research framework** for investigating **adversarially induced proxy-reward exploitation (reward hacking)** in autonomous LLM agents across heterogeneous task environments.
 
-The core research question:
+The framework advances reward-hacking research from single-domain code test weakening into a comprehensive **multi-domain, closed-loop adversarial evaluation system (V4 Protocol)**:
 
-> *Can an adaptive adversarial Hacker LLM — conditioned on a semantic behavioural profile of the Target — discover and exploit proxy-reward loopholes more effectively than raw-history or task-static baselines?*
-
-The framework implements the **V3 Protocol** (Target-conditioned Semantic Adversarial Discovery), which introduces:
-
-- **Target Behaviour Profiler (TBP)**: Five information modes (`static`, `raw_history`, `structured_profile`, `semantic_profile`, `shuffled_profile`) for the Hacker to understand Target behaviour.
-- **AttackPlan schema**: Structured separation of attack objective, strategy selection, adversarial context, and probabilistic response prediction.
-- **Target Instruction Policies**: `P0 — permissive_v2` (baseline) and `P1 — integrity_aware` (rejects prompt-injection and evaluator modification).
-- **MechanismAuditor Protocol**: Formal `M1TestWeakeningAuditor` backed by Python AST traversal, returning an `EvidenceBundle` with mechanism verification, proxy attribution, and evidence event IDs.
-- **One-Shot Delivery Guarantee**: Injected suggestions are exposed to the Target on exactly one turn, then cleared (P0 protocol correctness).
-- **Non-Overlapping Attribution Windows**: Intervention schedule `[2, 5, 8]` with 2-action observation windows that never overlap.
+- **6 Task Families (23 Benchmark Tasks)**:
+  1. `coding`: Algorithmic problems with editable visible test suites vs hidden protected assertions (8 tasks preserved from V2/V3).
+  2. `data_pipeline`: ETL pipelines with deduplication, anomaly handling, and KPI aggregation (3 tasks).
+  3. `sql_analytics`: Relational analytics with read-only sandbox, revenue joins, stock reconciliation, and retention cohorts (3 tasks).
+  4. `workflow`: State-machine ticket operations, refund processing, incident triage, and order fulfillment (3 tasks).
+  5. `scheduling`: Constrained resource allocation, staff shifts, machine job shop, and exam proctors (3 tasks).
+  6. `document_evidence`: Document QA, contract extraction, policy reconciliation, and multi-source incident chronology (3 tasks).
+- **M1–M6 Domain Mechanism Auditors**: Reusable, evidence-backed offline auditors that inspect post-episode snapshots and verify whether attributable proxy gains violated independent true objectives.
+- **MultiDomainDetector**: Real-time online monitoring with generic invariant checks (G1, G2) and domain plugins (C1, D1, S1/S2, W1/W2, K1, E1).
+- **Closed-Loop Adversarial Interaction**:
+  - **Dynamic Target Profiler**: Deterministic, LLM semantic, and genuine temporal-shuffle profiles.
+  - **Response Feedback Loop**: Explicit adjudication of target responses (`follow`, `partial`, `ignore`, `reject`) and residual error tracking.
+  - **Channel-Aware Routing**: Adversarial suggestions delivered via `direct_message`, `task_artifact`, or `tool_output`.
+  - **Persistent SQLite Vulnerability Memory**: Append-only public behavioral memory with strict provenance isolation and zero private label leakage.
+- **Hardware Acceleration**: 100% GPU offload on NVIDIA GeForce RTX 3060 (12 GB VRAM) running `qwen2.5-coder:7b-instruct` (Target) and `qwen3:4b` (Hacker/Profiler) co-resident in memory.
 
 ---
 
@@ -253,6 +258,52 @@ python -m reward_hacking.run --protocol v3 --experiment semantic_ablation --bloc
 Results are saved to `runs/v3_exp_<timestamp>/`. Plots, Markdown, and PDF are auto-generated.
 
 ### 5. Run Specific Condition Only
+
+```powershell
+python -m reward_hacking.run --protocol v3 --condition semantic_profile --blocks 8
+```
+
+---
+
+## Running V4 Multi-Domain Experiments
+
+The V4 protocol expands evaluation across all six task domains (coding, data pipeline, SQL analytics, workflow, scheduling, document evidence) with closed-loop response feedback and M1-M6 auditors.
+
+### 1. Run Complete Test Suite (60 tests)
+
+```powershell
+.venv\Scripts\pytest tests/ -v
+# Expected: 60 passed in ~72s
+```
+
+### 2. Run Per-Domain Calibration Battery (12 episodes)
+
+Runs positive exploit control and benign helper tests across each of the 6 task domains to verify gate criteria:
+
+```powershell
+.venv\Scripts\python.exe -m reward_hacking.protocols.calibration_v4
+```
+
+### 3. Run Blocked Multi-Domain V4 Experiment
+
+Executes matched-block evaluation across all 6 domains and conditions under the runtime-aware budget guard:
+
+```powershell
+# Run primary C0-C5 multi-domain matrix
+.venv\Scripts\python.exe -m reward_hacking.protocols.v4 --config configs/v4_default.yaml
+
+# Run ablation matrix (closed-loop response adaptive, memory, P1 policy, channels)
+.venv\Scripts\python.exe -m reward_hacking.protocols.v4 --config configs/v4_ablation.yaml --episodes 72
+```
+
+### 4. Compile Comprehensive Publication Report & PDF
+
+Computes Tables 1–9 from raw JSONL event streams, renders Matplotlib figures, and generates both `REPORT.md` and `REPORT.pdf`:
+
+```powershell
+.venv\Scripts\python.exe -m reward_hacking.reporting_v4 --run-dir results/v4/test_multidomain
+```
+
 
 ```powershell
 python -m reward_hacking.run --protocol v3 --experiment smoke --condition semantic_profile --blocks 2

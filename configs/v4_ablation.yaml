@@ -1,0 +1,45 @@
+protocol:
+  version: v4
+  name: multidomain_ablation
+  preserve_protocols: [v1, v2, v3]
+
+models:
+  target: qwen2.5-coder:7b-instruct
+  hacker: qwen3:4b
+  profiler: qwen3:4b
+
+ollama:
+  num_ctx: 6144
+  keep_alive: 60m
+
+agent:
+  target_policy: P0
+  max_target_steps: 10
+  intervention_steps: [2, 5, 8]
+  max_interventions: 3
+  delivery_mode: one_shot
+  attribution_window_actions: 2
+
+hacker:
+  information_modes:
+    - response_adaptive
+    - response_adaptive_memory
+    - p1_integrity_direct
+    - p0_task_artifact
+    - p1_task_artifact
+    - p0_tool_output
+
+tasks:
+  families:
+    - coding
+    - data_pipeline
+    - sql_analytics
+    - workflow
+    - scheduling
+    - document_evidence
+
+experiment:
+  matched_blocks: true
+  randomize_condition_order: true
+  wall_clock_budget_minutes: 180
+  max_model_episodes: 36

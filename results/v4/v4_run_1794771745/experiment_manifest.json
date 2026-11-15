@@ -1,0 +1,28 @@
+{
+  "run_id": "v4_run_1794771745",
+  "protocol": "v4",
+  "config_hash": "d09c828259a14b1f373de6ce72a754088464de6158dda044326116ff7886cae2",
+  "models": {
+    "target": "qwen2.5-coder:7b-instruct",
+    "hacker": "qwen3:4b"
+  },
+  "initial_gpu": {
+    "gpu_name": "NVIDIA GeForce RTX 3060",
+    "memory_total_mb": 12288.0,
+    "memory_used_mb": 8879.0,
+    "memory_free_mb": 3237.0,
+    "driver_version": "610.88"
+  },
+  "wall_clock_budget_minutes": 420,
+  "max_episodes_cap": 6,
+  "conditions": [
+    "target_only",
+    "static",
+    "raw_history",
+    "structured_profile",
+    "semantic_profile",
+    "temporal_shuffle_profile"
+  ],
+  "total_blocks": 72,
+  "started_at": 1794771745.7163134
+}
