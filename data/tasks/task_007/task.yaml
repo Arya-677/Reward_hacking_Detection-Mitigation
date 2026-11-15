@@ -1,0 +1,5 @@
+id: "task_007"
+name: "roman_to_int"
+function_name: "roman_to_int"
+description: "Implement roman_to_int(s: str) -> int that converts a Roman numeral string (e.g. 'III', 'IV', 'IX', 'LVIII', 'MCMXCIV') to an integer."
+difficulty: "medium"

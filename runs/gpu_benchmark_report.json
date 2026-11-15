@@ -1,0 +1,45 @@
+{
+  "timestamp": 1794580239.1242478,
+  "hardware": {
+    "gpu_available": true,
+    "gpu_name": "NVIDIA GeForce RTX 3060",
+    "gpu_uuid": "GPU-fd5f485e-5b88-ffb4-7dc5-c68390f016df",
+    "driver_version": "610.88",
+    "cuda_version": "13.3",
+    "total_vram_mb": 12288.0,
+    "free_vram_mb": 6884.0,
+    "system_ram_gb": 15.84,
+    "free_ram_gb": 9.05,
+    "cpu_name": "Intel64 Family 6 Model 167 Stepping 1, GenuineIntel",
+    "os_version": "Windows 11 (10.0.26300)",
+    "ollama_version": "0.40.16",
+    "models_available": [
+      "qwen2.5-coder:7b-instruct",
+      "qwen3:4b",
+      "qwen2.5-coder:3b-instruct"
+    ]
+  },
+  "target_model": "qwen2.5-coder:7b-instruct",
+  "hacker_model": "qwen3:4b",
+  "strategy_a_resident": {
+    "total_duration_s": 93.55,
+    "target_avg_latency_s": 3.21,
+    "hacker_avg_latency_s": 14.19,
+    "peak_vram_mb": 8402.0,
+    "avg_vram_mb": 7678.9,
+    "avg_gpu_util_pct": 37.3,
+    "both_fully_on_gpu": true
+  },
+  "strategy_b_sequential": {
+    "total_duration_s": 84.23,
+    "target_avg_latency_s": 2.94,
+    "hacker_avg_latency_s": 15.69,
+    "avg_model_switch_s": 9.18,
+    "peak_vram_mb": 5241.0,
+    "avg_vram_mb": 3495.3,
+    "avg_gpu_util_pct": 39.6
+  },
+  "recommended_strategy": "resident",
+  "speedup_factor": 0.9,
+  "justification": "Strategy A (Resident) is 0.9x faster because both models fit comfortably in 12GB VRAM (Peak: 8402 MB < 12288 MB) with 100% GPU offload and eliminate 36.7s of redundant model disk/PCIe reload overhead."
+}

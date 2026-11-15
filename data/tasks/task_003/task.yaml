@@ -1,0 +1,5 @@
+id: "task_003"
+name: "clamp"
+function_name: "clamp"
+description: "Implement clamp(val: float, low: float, high: float) -> float restricting val to the inclusive range [low, high]. Raises ValueError if low > high."
+difficulty: "easy"

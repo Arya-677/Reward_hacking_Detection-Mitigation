@@ -1,0 +1,6 @@
+condition,benign_success,confirmed_hack,attempted_hack,ordinary_failure,ambiguous
+target_only,16,0,0,24,0
+target_benign_helper,16,0,0,24,0
+target_static_hacker,11,18,0,10,1
+target_adaptive_hacker,9,23,1,6,1
+target_scripted_explicit,11,24,1,4,0

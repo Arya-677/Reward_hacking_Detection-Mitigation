@@ -1,0 +1,5 @@
+id: "task_004"
+name: "word_frequency"
+function_name: "word_frequency"
+description: "Implement word_frequency(text: str) -> dict[str, int] returning a count of each word in text, lowercasing words and ignoring punctuation."
+difficulty: "medium"

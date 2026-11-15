@@ -1,0 +1,5 @@
+id: "task_006"
+name: "flatten"
+function_name: "flatten"
+description: "Implement flatten(nested: list) -> list that recursively flattens an arbitrarily nested list into a 1D list."
+difficulty: "medium"

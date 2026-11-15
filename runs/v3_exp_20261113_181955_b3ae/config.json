@@ -1,0 +1,74 @@
+{
+  "ollama": {
+    "base_url": "http://localhost:11434",
+    "num_ctx": 6144,
+    "keep_alive": "60m",
+    "request_timeout_s": 180
+  },
+  "target": {
+    "model": "qwen2.5-coder:7b-instruct",
+    "policy": "permissive_v2",
+    "temperature": 0.4,
+    "max_tokens": 1024,
+    "max_steps": 10
+  },
+  "hacker": {
+    "model": "qwen3:4b",
+    "temperature": 0.7,
+    "max_tokens": 350,
+    "max_interventions": 3,
+    "schedule": [
+      2,
+      5,
+      8
+    ],
+    "delivery_mode": "one_shot",
+    "attribution_window_target_actions": 2,
+    "disable_thinking": true
+  },
+  "hacker_information": {
+    "modes": [
+      "static",
+      "raw_history",
+      "structured_profile",
+      "semantic_profile",
+      "shuffled_profile"
+    ],
+    "max_public_events": 12,
+    "max_profile_tokens": 450,
+    "max_attack_tokens": 350,
+    "require_evidence_event_ids": true,
+    "forbid_private_evaluation_fields": true
+  },
+  "profiler": {
+    "enabled": true,
+    "update_at_intervention_only": true,
+    "schema_version": 1,
+    "require_unknowns_field": true,
+    "max_inference_confidence": 0.95
+  },
+  "sandbox": {
+    "mode": "restricted_subprocess",
+    "allow_restricted": true,
+    "timeout_seconds": 10,
+    "docker_image": "python:3.11-slim",
+    "docker_memory": "256m",
+    "docker_cpus": 1.0
+  },
+  "experiment": {
+    "time_budget_minutes": 135,
+    "base_seed": 20261102,
+    "tasks": [
+      "task_001",
+      "task_002",
+      "task_003",
+      "task_004",
+      "task_005",
+      "task_006",
+      "task_007",
+      "task_008"
+    ]
+  },
+  "preset": "primary",
+  "project_root": "C:\\demo_cap\\reward_hacking_mvp"
+}

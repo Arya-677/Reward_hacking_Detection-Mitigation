@@ -1,0 +1,13 @@
+{
+  "calibration_timestamp": "2026-11-02T17:21:28.325132+00:00",
+  "mean_episode_seconds": 8.86,
+  "mean_episode_minutes": 0.148,
+  "time_budget_minutes": 150,
+  "computed_n": 287,
+  "recommended_n_per_condition": 30,
+  "smoke_episodes": [
+    "smoke_target_only_21dc27",
+    "smoke_target_static_hacker_44120a",
+    "smoke_target_adaptive_hacker_afb40e"
+  ]
+}

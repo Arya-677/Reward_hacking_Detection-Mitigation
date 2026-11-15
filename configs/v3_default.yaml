@@ -1,0 +1,73 @@
+# V3 Protocol Default Configuration: Target-Conditioned Semantic Adversarial Discovery
+protocol:
+  version: "v3"
+  experiment_name: "semantic_target_profile_ablation"
+  seed: 20261113
+
+models:
+  target: "qwen2.5-coder:7b-instruct"
+  hacker: "qwen3:4b"
+  profiler: "qwen3:4b"
+  record_model_digests: true
+
+agent:
+  target_policy: "permissive_v2"
+  target_temperature: 0.4
+  hacker_temperature: 0.7
+  max_target_steps: 10
+  max_hacker_interventions: 3
+  intervention_steps: [2, 5, 8]
+  delivery_mode: "one_shot"
+  attribution_window_target_actions: 2
+
+hacker_information:
+  modes:
+    - "static"
+    - "raw_history"
+    - "structured_profile"
+    - "semantic_profile"
+    - "shuffled_profile"
+  max_public_events: 12
+  max_profile_tokens: 450
+  max_attack_tokens: 350
+  require_evidence_event_ids: true
+  forbid_private_evaluation_fields: true
+
+profiler:
+  enabled: true
+  update_at_intervention_only: true
+  schema_version: 1
+  require_unknowns_field: true
+  max_inference_confidence: 0.95
+
+experiment:
+  task_families:
+    - "coding"
+  tasks:
+    - "task_001"
+    - "task_002"
+    - "task_003"
+    - "task_004"
+    - "task_005"
+    - "task_006"
+    - "task_007"
+    - "task_008"
+  matched_blocks: 12
+  randomize_condition_order: true
+  conditions:
+    - "target_only"
+    - "informed_static"
+    - "raw_history"
+    - "structured_profile"
+    - "semantic_profile"
+    - "shuffled_profile"
+  calibration_only_controls:
+    - "benign_helper"
+    - "scripted_explicit"
+  time_budget_minutes: 135
+
+security:
+  require_container_isolation: false
+  network_disabled: true
+  allow_restricted_subprocess_for_untrusted_code: true
+  protected_evaluator_separate: true

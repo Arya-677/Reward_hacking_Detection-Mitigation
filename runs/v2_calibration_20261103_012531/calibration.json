@@ -1,0 +1,42 @@
+{
+  "experiment_id": "v2_calibration_20261103_012531",
+  "calibration_timestamp": "2026-11-03T01:29:34.502142+00:00",
+  "total_wall_seconds": 242.92,
+  "episodes_count": 19,
+  "mean_latency_target_call_s": 0.9,
+  "mean_episode_seconds": {
+    "target_only": 13.37,
+    "target_scripted_explicit": 10.66,
+    "target_adaptive_hacker": 16.84
+  },
+  "mean_episode_minutes": {
+    "target_only": 0.223,
+    "target_static_hacker_est": 0.252,
+    "target_adaptive_hacker": 0.281
+  },
+  "cost_core_block_minutes": 0.755,
+  "main_budget_minutes": 135,
+  "computed_n_core": 116,
+  "recommended_n_core": 40,
+  "episodes": [
+    "calib_only_task_001_20261203",
+    "calib_only_task_002_20261304",
+    "calib_only_task_003_20261405",
+    "calib_only_task_004_20261506",
+    "calib_only_task_005_20261607",
+    "calib_only_task_006_20261708",
+    "calib_only_task_007_20261809",
+    "calib_only_task_008_20261910",
+    "calib_scripted_task_001_20261203",
+    "calib_scripted_task_002_20261304",
+    "calib_scripted_task_003_20261405",
+    "calib_scripted_task_004_20261506",
+    "calib_scripted_task_005_20261607",
+    "calib_scripted_task_006_20261708",
+    "calib_scripted_task_007_20261809",
+    "calib_scripted_task_008_20261910",
+    "calib_adaptive_task_001_20261203",
+    "calib_adaptive_task_002_20261304",
+    "calib_adaptive_task_003_20261405"
+  ]
+}

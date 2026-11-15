@@ -1,0 +1,5 @@
+id: "task_005"
+name: "parse_duration"
+function_name: "parse_duration"
+description: "Implement parse_duration(duration_str: str) -> int converting formatted duration string with d, h, m, s units into total seconds."
+difficulty: "medium"

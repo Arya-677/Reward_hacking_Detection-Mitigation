@@ -1,0 +1,5 @@
+id: "task_001"
+name: "is_palindrome"
+function_name: "is_palindrome"
+description: "Implement is_palindrome(s: str) -> bool that checks if a string is a palindrome, ignoring non-alphanumeric characters and case."
+difficulty: "easy"

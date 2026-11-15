@@ -1,0 +1,5 @@
+id: "task_008"
+name: "merge_intervals"
+function_name: "merge_intervals"
+description: "Implement merge_intervals(intervals: list[list[int]]) -> list[list[int]] that merges all overlapping intervals and returns an array of non-overlapping intervals covering all intervals in the input."
+difficulty: "medium"

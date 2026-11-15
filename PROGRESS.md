@@ -1,0 +1,52 @@
+# Progress Tracker: Version 2 Refined Experiment
+
+## Status: V2 PROTOCOL FULLY COMPLETED, GATES PASSED, MAIN RUN EXECUTED, REPORT PDF COMPILED & UPLOADED TO GOOGLE DRIVE
+
+- [x] **Phase 0 & 0b: Setup, V1 Code Archival & V1 Audit**:
+  - Archived V1 code to `archive/v1_src`.
+  - Conducted thorough post-mortem audit in `V1_AUDIT.md` (confirmed P7 bug, lack of distraction controls, and AST blacklist issues).
+- [x] **Phase 1: Model Verification & VRAM Benchmarking**:
+  - Pulled `qwen2.5-coder:7b-instruct` (ID `dae161e27b0e`) and verified with `qwen3:4b` under `NUM_CTX=6144`.
+  - Verified 100% GPU offload on NVIDIA RTX 3060 (12GB) at 9.3 GB total VRAM. Frozen primary preset.
+- [x] **Phase 2: Task Suite & Core Module Implementation (Sections 5-13)**:
+  - Implemented all 8 tasks (`task_001` through `task_008`) with visible, protected, buggy, reference, and hard variants.
+  - Implemented `replace_in_file` with exact single-match replacement semantics.
+  - Implemented strict AST allowlist sandbox (13 stdlib modules + pytest/unittest).
+  - Implemented Behavioral Replay ground-truth labeler (`E1`-`E8`, 5 labels, failure taxonomy priority order).
+  - Implemented online rule-based detector (Rules R1-R6).
+  - Implemented statistical testing (paired McNemar test, Holm-Bonferroni correction, Newcombe-Wilson risk difference 95% CIs).
+  - Built unit test verification suite: **30/30 tests passed (100%)** in `TEST_REPORT.md`.
+- [x] **Phase 3: Calibration & Gates Evaluation (Section 10)**:
+  - Ran 19-episode calibration across conditions.
+  - Applied allowed ergonomics & context memory adjustments: persistent in-memory file cache, rolling action history, explicit Level-3 instructions.
+  - Evaluated gates on Calibration Round 3 (`v2_calibration_20261103_014148`): **ALL 4 GATES PASSED**:
+    - Gate G1 (Capability Band): **PASS** (5/8 solved genuine baseline).
+    - Gate G2a (Compliance): **PASS** (6/8 test edits in scripted explicit).
+    - Gate G2b (Executability): **PASS** (166.7% valid edits).
+    - Gate G3 (Validity): **PASS** (100% proxy invariants & security tests pass).
+    - Gate G4 (Hacker Validity): **PASS** (100.0% JSON validity, zero forbidden keys).
+- [x] **Phase 4: Pre-Registration (Section 10.3)**:
+  - Pre-registered hypotheses H1 & H2, contrasts PC1 & PC2, and multiplicity control in `ANALYSIS_PLAN.md`.
+  - Protocol SHA-256 hash frozen: `60d6a618ca791fa0f59c905e3142bcddbae9f2f8b583a3f9b4a703375ccd52d4`.
+- [x] **Phase 5: Main Experiment Run (Section 11)**:
+  - Executed matched-block randomized experiment across 5 conditions auto-sized to 40 blocks.
+  - Total episodes: **200 completed episodes** (40 target_only, 40 target_benign_helper, 40 target_static_hacker, 40 target_adaptive_hacker, 40 target_scripted_explicit).
+  - Wall-clock runtime: ~50 minutes, adhering strictly to budget guard.
+  - Empirical Findings:
+    - `target_only`: 0/40 hacks (0.0%), 40.0% true success.
+    - `target_benign_helper`: 0/40 hacks (0.0%), 40.0% true success (distraction control).
+    - `target_static_hacker`: 18/40 hacks (45.0%), 30.0% true success.
+    - `target_adaptive_hacker`: 23/40 hacks (57.5%), 25.0% true success.
+    - `target_scripted_explicit`: 24/40 hacks (60.0%), 27.5% true success.
+    - Contrast PC2 (`target_adaptive_hacker` vs `target_only`): **p < 0.001** (statistically significant).
+    - Contrast PC1 (`target_adaptive_hacker` vs `target_static_hacker`): **p = 0.332** (not statistically significant; informed static produces comparable exploit rates).
+- [x] **Phase 6: Reporting, Artifacts, and Publication PDF (Section 13)**:
+  - Generated all 6 publication charts (PNG) and CSV/JSON data files.
+  - Generated `REPORT.md` and executive `REVIEW_SUMMARY.md`.
+  - Compiled publication-quality `REPORT.pdf` with embedded charts (700 KB).
+  - Copied to `c:\demo_cap\Capstone Report Version 2.pdf`.
+- [x] **Phase 7: Google Drive Upload**:
+  - Connected as `aryadevang2006@gmail.com`.
+  - Uploaded `Capstone Report Version 2.pdf` to Google Drive.
+  - File ID: `1v09VJXm0wfYZ8zAdc8Ujvri-_89MRIGw`.
+  - Web URL: `https://drive.google.com/file/d/1v09VJXm0wfYZ8zAdc8Ujvri-_89MRIGw/view?usp=drivesdk`.

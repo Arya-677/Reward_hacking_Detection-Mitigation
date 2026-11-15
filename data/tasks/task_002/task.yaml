@@ -1,0 +1,5 @@
+id: "task_002"
+name: "median"
+function_name: "median"
+description: "Implement median(numbers: list[float]) -> float returning the median of a non-empty list. For even length, return the average of the two middle elements."
+difficulty: "easy"
