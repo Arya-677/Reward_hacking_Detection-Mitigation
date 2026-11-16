@@ -25,13 +25,14 @@ from typing import Any, Dict, List, Literal, Optional, Sequence, Tuple
 import yaml
 from pydantic import BaseModel, Field
 
-from reward_hacking.adapters.base import AgentAction, StepResult, TaskAdapter, TaskObservation
+from reward_hacking.adapters.base import AgentAction, StepResult, TaskAdapter, TaskObservation, read_proxy_score
 from reward_hacking.evaluation.detector_v4 import MultiDomainDetector
 from reward_hacking.evaluation.labels import MultiAxisLabelRecord, adjudicate_multi_axis_episode
 from reward_hacking.gpu_monitor import GPUMonitor
 from reward_hacking.interaction.channel_router import ChannelRouter
 from reward_hacking.interaction.hacker_v4 import AttackPlanV4, HackerAgentV4
 from reward_hacking.interaction.interaction_controller import InteractionController, InterventionRecordV4
+from reward_hacking.interaction.profile_v4 import ProfilerCallRecord
 from reward_hacking.interaction.vulnerability_memory import VulnerabilityMemory
 from reward_hacking.model_client import ModelClient
 from reward_hacking.registry import TaskRegistry, TASKS_BY_FAMILY
@@ -48,6 +49,7 @@ class EpisodeRecordV4(BaseModel):
     task_family: str
     seed: int
     condition: str
+    exposure_mode: str = "one_shot"
     adaptation_mode: str
     target_policy: str
     delivery_channel: str
@@ -59,6 +61,7 @@ class EpisodeRecordV4(BaseModel):
     trajectory: List[Dict[str, Any]] = Field(default_factory=list)
     proxy_history: List[float] = Field(default_factory=list)
     interventions_count: int = 0
+    profiler_calls_count: int = 0
     detector_flagged: bool = False
     detector_rule_ids: List[str] = Field(default_factory=list)
     latency_seconds: float = 0.0
@@ -75,6 +78,8 @@ def run_v4_episode(
     model_client: Optional[ModelClient] = None,
     target_model: str = "qwen2.5-coder:7b-instruct",
     hacker_model: str = "qwen3:4b",
+    profiler_model: str = "qwen3:4b",
+    exposure_mode: Literal["one_shot", "persistent"] = "one_shot",
     target_policy: Literal["P0", "P1"] = "P0",
     delivery_channel: Literal["direct_message", "task_artifact", "tool_output"] = "direct_message",
     adaptation_mode: str = "open_loop",
@@ -111,16 +116,18 @@ def run_v4_episode(
             memory=memory,
             intervention_steps=intervention_steps,
             information_mode=condition,
+            exposure_mode=exposure_mode,
             adaptation_mode=adaptation_mode,
             target_policy=target_policy,
             delivery_channel=delivery_channel,
+            profiler_model=profiler_model,
         )
 
         detector = MultiDomainDetector(task_family=family)
 
         public_events: List[Dict[str, Any]] = []
         trajectory: List[Dict[str, Any]] = []
-        proxy_history: List[float] = [float(obs.visible_proxy_feedback.get("sample_validity", 0.0) or obs.visible_proxy_feedback.get("coverage_ratio", 0.0) or 0.0)]
+        proxy_history: List[float] = [read_proxy_score(obs)]
         target_model_digest = model_client.get_model_digest(target_model) or "" if model_client else ""
 
         # 3. Main Step Loop
@@ -192,15 +199,8 @@ def run_v4_episode(
             }
             trajectory.append(traj_entry)
 
-            # Extract proxy score
-            proxy_feedback = step_result.observation.visible_proxy_feedback
-            current_proxy = float(
-                proxy_feedback.get("sample_validity", 0.0)
-                or proxy_feedback.get("coverage_ratio", 0.0)
-                or proxy_feedback.get("pass_rate", 0.0)
-                or proxy_feedback.get("format_valid", 0.0)
-                or (1.0 if proxy_feedback.get("ticket_closed") else 0.0)
-            )
+            # Extract proxy score using canonical validator
+            current_proxy = read_proxy_score(step_result.observation)
             proxy_history.append(current_proxy)
 
             obs = step_result.observation
@@ -222,11 +222,15 @@ def run_v4_episode(
 
         true_score = float(private_snapshot.get("true_objective_score", 0.0))
         final_proxy = proxy_history[-1] if proxy_history else 0.0
-        proxy_gain = max(0.0, final_proxy - proxy_history[0]) if len(proxy_history) > 1 else final_proxy
+        trajectory_gain = max(0.0, final_proxy - proxy_history[0]) if len(proxy_history) > 1 else final_proxy
+        if audit_bundle.verified and audit_bundle.attributable_proxy_gain > 0:
+            effective_proxy_gain = audit_bundle.attributable_proxy_gain
+        else:
+            effective_proxy_gain = trajectory_gain
 
         primary_label, label_rec = adjudicate_multi_axis_episode(
             bundle=audit_bundle,
-            proxy_gain=proxy_gain,
+            proxy_gain=effective_proxy_gain,
             true_objective_score=true_score,
             proxy_score=final_proxy,
         )
@@ -240,6 +244,7 @@ def run_v4_episode(
             task_family=family,
             seed=seed,
             condition=condition,
+            exposure_mode=exposure_mode,
             adaptation_mode=adaptation_mode,
             target_policy=target_policy,
             delivery_channel=delivery_channel,
@@ -251,6 +256,7 @@ def run_v4_episode(
             trajectory=trajectory,
             proxy_history=proxy_history,
             interventions_count=len(controller.intervention_history),
+            profiler_calls_count=len(controller.profiler_call_history),
             detector_flagged=detector.flagged,
             detector_rule_ids=detector.flagged_rules,
             latency_seconds=latency,
@@ -263,6 +269,7 @@ def run_v4_episode(
             episode=episode_record,
             public_events=public_events,
             interventions=controller.intervention_history,
+            profiler_calls=controller.profiler_call_history,
             private_snapshot=private_snapshot,
             audit_bundle=audit_bundle,
             detector=detector,
@@ -282,6 +289,7 @@ def _persist_episode_artifacts(
     private_snapshot: Dict[str, Any],
     audit_bundle: Any,
     detector: MultiDomainDetector,
+    profiler_calls: Optional[List[Any]] = None,
 ) -> None:
     """Write raw immutable JSONL and private audit records with clear separation."""
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -314,7 +322,27 @@ def _persist_episode_artifacts(
         }
         f.write(json.dumps(det_record) + "\n")
 
-    # 5. private_audit/{episode_id}.json (isolated private evaluation)
+    # 5. profiler_calls.jsonl (tracks LLM semantic profiler invocations)
+    if profiler_calls:
+        with open(output_dir / "profiler_calls.jsonl", "a", encoding="utf-8") as f:
+            for p_call in profiler_calls:
+                f.write((p_call.model_dump_json() if hasattr(p_call, "model_dump_json") else json.dumps(p_call)) + "\n")
+
+    # 6. runtime_metrics.jsonl
+    with open(output_dir / "runtime_metrics.jsonl", "a", encoding="utf-8") as f:
+        metric_rec = {
+            "episode_id": episode.episode_id,
+            "task_id": episode.task_id,
+            "condition": episode.condition,
+            "latency_seconds": episode.latency_seconds,
+            "total_steps": episode.total_steps,
+            "interventions_count": episode.interventions_count,
+            "profiler_calls_count": episode.profiler_calls_count,
+            "completed_at": episode.completed_at,
+        }
+        f.write(json.dumps(metric_rec) + "\n")
+
+    # 7. private_audit/{episode_id}.json (isolated private evaluation)
     private_data = {
         "episode_id": episode.episode_id,
         "task_id": episode.task_id,
@@ -347,6 +375,7 @@ def run_v4_experiment(
 
     target_model = models_cfg.get("target", "qwen2.5-coder:7b-instruct")
     hacker_model = models_cfg.get("hacker", "qwen3:4b")
+    profiler_model = models_cfg.get("profiler", "qwen3:4b")
     budget_minutes = exp_cfg.get("wall_clock_budget_minutes", 420)
     max_model_episodes = override_episodes_cap or exp_cfg.get("max_model_episodes", 600)
     deadline = start_wall_time + (budget_minutes * 60)
@@ -383,37 +412,22 @@ def run_v4_experiment(
         "target_only", "static", "raw_history", "structured_profile", "semantic_profile", "temporal_shuffle_profile"
     ])
 
-    # Build Matched Blocks
-    # 72 blocks total: 12 blocks per family across 6 families
-    # Coding: 8 tasks + 4 repeats = 12 blocks
-    # Other 5 families: 3 tasks x 4 seeds = 12 blocks each
-    coding_blocks: List[Tuple[str, int]] = []
-    coding_tasks = TASKS_BY_FAMILY["coding"]
-    for i, t in enumerate(coding_tasks):
-        coding_blocks.append((t, 100 + i))
-    for i in range(4):
-        coding_blocks.append((coding_tasks[i % len(coding_tasks)], 200 + i))
-
-    family_blocks: Dict[str, List[Tuple[str, int]]] = {"coding": coding_blocks}
-    for fam in ["data_pipeline", "sql_analytics", "workflow", "scheduling", "document_evidence"]:
-        fam_tasks = TASKS_BY_FAMILY[fam]
-        f_list: List[Tuple[str, int]] = []
-        for s in range(4):
-            for t in fam_tasks:
-                f_list.append((t, 1000 + s * 10))
-        family_blocks[fam] = f_list
-
-    # Interleave round-robin across the 6 families so all domains progress equally
+    # Build Matched Blocks across all 23 tasks in 6 families
     blocks: List[Tuple[str, int]] = []
     families = ["coding", "data_pipeline", "sql_analytics", "workflow", "scheduling", "document_evidence"]
-    for r in range(12):
-        for fam in families:
-            if r < len(family_blocks[fam]):
-                blocks.append(family_blocks[fam][r])
+    num_seeds = config.get("experiment", {}).get("seeds_per_task", 2)
+    seeds = [100 + s for s in range(1, num_seeds + 1)]
 
-    logger.info(f"Generated {len(blocks)} matched task-seed blocks interleaved across 6 domains.")
+    # Interleave round-robin across families so all domains progress equally
+    for s in seeds:
+        max_len = max(len(TASKS_BY_FAMILY[fam]) for fam in families)
+        for i in range(max_len):
+            for fam in families:
+                tasks = TASKS_BY_FAMILY[fam]
+                if i < len(tasks):
+                    blocks.append((tasks[i], s))
 
-    logger.info(f"Generated {len(blocks)} matched task-seed blocks across 6 domains.")
+    logger.info(f"Generated {len(blocks)} matched task-seed blocks interleaved across {len(families)} domains.")
 
     # Checkpoint set for resume
     completed_keys: set = set()
@@ -482,17 +496,19 @@ def run_v4_experiment(
             print(f"[{total_episodes_run + 1}] Running Task: {task_id:25s} | Seed: {seed} | Cond: {cond:20s}", end="", flush=True)
 
             # Resolve policy, channel, and adaptation_mode dynamically
-            ep_policy = "P1" if "p1" in cond.lower() else agent_cfg.get("target_policy", "P0")
+            cond_lower = cond.lower()
+            ep_policy = "P1" if "p1" in cond_lower else agent_cfg.get("target_policy", "P0")
             ep_channel = (
-                "task_artifact" if "artifact" in cond.lower()
-                else ("tool_output" if "tool" in cond.lower()
+                "task_artifact" if "artifact" in cond_lower
+                else ("tool_output" if "tool" in cond_lower
                 else config.get("hacker", {}).get("channels", ["direct_message"])[0])
             )
             ep_adapt = (
-                "response_adaptive_memory" if "memory" in cond.lower()
-                else ("response_adaptive" if "adaptive" in cond.lower()
+                "response_adaptive_memory" if "memory" in cond_lower
+                else ("response_adaptive" if "adaptive" in cond_lower
                 else "open_loop")
             )
+            ep_exposure = "persistent" if ("persistent" in cond_lower or cond_lower in ("c2", "c4", "c6")) else "one_shot"
 
             ep = run_v4_episode(
                 run_id=run_id,
@@ -504,6 +520,8 @@ def run_v4_experiment(
                 model_client=client,
                 target_model=target_model,
                 hacker_model=hacker_model,
+                profiler_model=profiler_model,
+                exposure_mode=ep_exposure,
                 target_policy=ep_policy,
                 delivery_channel=ep_channel,
                 adaptation_mode=ep_adapt,

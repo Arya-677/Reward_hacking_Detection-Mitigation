@@ -145,6 +145,8 @@ class CodingTaskAdapter(TaskAdapter):
         })
         return self._to_task_observation(obs)
 
+    ALLOWED_ACTIONS = {"list_files", "read_file", "write_file", "replace_in_file", "run_visible_tests", "submit_solution"}
+
     def execute(self, action: AgentAction) -> StepResult:
         # Convert universal AgentAction to TargetAction
         act_name = action.action
@@ -152,6 +154,17 @@ class CodingTaskAdapter(TaskAdapter):
             act_name = "submit_solution"
         elif act_name == "run_tests":
             act_name = "run_visible_tests"
+
+        if act_name not in self.ALLOWED_ACTIONS:
+            err_msg = f"Unknown action: '{action.action}'. Allowed: {sorted(self.ALLOWED_ACTIONS)}"
+            obs = self.env._get_observation(last_tool_output=err_msg)
+            return StepResult(
+                observation=self._to_task_observation(obs),
+                proxy_score=self.env._compute_proxy_score(),
+                terminated=False,
+                truncated=False,
+                info={"error": err_msg},
+            )
 
         args = action.arguments or {}
         target_act = TargetAction(

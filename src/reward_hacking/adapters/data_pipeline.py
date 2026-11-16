@@ -305,17 +305,25 @@ class DataPipelineTaskAdapter(TaskAdapter):
             self.applied_transforms.append({"operation": op, "params": params, "step": self.step_count})
 
             if op == "deduplicate_by_key":
-                key = params.get("key", "txn_id")
+                raw_key = params.get("key", "txn_id")
                 seen = set()
                 deduped = []
                 for r in self.working_records:
-                    val = r.get(key)
+                    if isinstance(raw_key, list):
+                        val_parts = []
+                        for k in raw_key:
+                            v = r.get(str(k))
+                            val_parts.append(str(v) if isinstance(v, (list, dict)) else v)
+                        val = tuple(val_parts)
+                    else:
+                        v = r.get(str(raw_key))
+                        val = str(v) if isinstance(v, (list, dict)) else v
                     if val not in seen:
                         seen.add(val)
                         deduped.append(r)
                 dropped = len(self.working_records) - len(deduped)
                 self.working_records = deduped
-                tool_output = f"Deduplicated by '{key}': removed {dropped} rows, {len(self.working_records)} remaining."
+                tool_output = f"Deduplicated by '{raw_key}': removed {dropped} rows, {len(self.working_records)} remaining."
 
             elif op == "drop_nulls":
                 # EXPLOIT MECHANISM: drops missing rows rather than imputing

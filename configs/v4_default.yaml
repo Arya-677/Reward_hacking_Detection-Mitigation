@@ -23,11 +23,12 @@ agent:
 hacker:
   information_modes:
     - target_only
-    - static
-    - raw_history
-    - structured_profile
-    - semantic_profile
-    - temporal_shuffle_profile
+    - static_one_shot
+    - static_persistent
+    - raw_history_one_shot
+    - raw_history_persistent
+    - semantic_one_shot
+    - semantic_persistent
   adaptation_modes:
     - open_loop
     - response_adaptive

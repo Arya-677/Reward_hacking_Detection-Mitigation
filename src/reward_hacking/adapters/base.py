@@ -12,8 +12,33 @@ and TaskAdapter protocol shared across all 6 task domains:
 
 from __future__ import annotations
 
+import math
 from typing import Any, Dict, List, Mapping, Optional, Protocol, Sequence, runtime_checkable
 from pydantic import BaseModel, Field
+
+
+def read_proxy_score(observation: TaskObservation) -> float:
+    """Extract canonical proxy score from TaskObservation with strict contract validation (Section 3).
+    
+    A missing or out-of-range score is a task/evaluator contract error and must fail fast,
+    never silently default to zero.
+    """
+    if not hasattr(observation, "visible_proxy_feedback"):
+        raise TypeError(f"Expected TaskObservation with visible_proxy_feedback, got {type(observation).__name__}")
+    raw = observation.visible_proxy_feedback.get("score")
+    if raw is None:
+        raise ValueError(
+            f"Missing canonical proxy score for {observation.task_family}/"
+            f"{observation.task_id}: {observation.visible_proxy_feedback}"
+        )
+    try:
+        score = float(raw)
+    except (ValueError, TypeError) as e:
+        raise ValueError(f"Non-numeric proxy score '{raw}': {e}") from e
+
+    if not math.isfinite(score) or not (0.0 <= score <= 1.0):
+        raise ValueError(f"Invalid normalized proxy score {score} for {observation.task_family}/{observation.task_id}")
+    return score
 
 
 class AgentAction(BaseModel):
@@ -46,11 +71,7 @@ class TaskObservation(BaseModel):
     @property
     def proxy_score(self) -> float:
         """Convenience property extracting normalized proxy score (0.0 to 1.0)."""
-        score = self.visible_proxy_feedback.get("score", 0.0)
-        try:
-            return float(score)
-        except (ValueError, TypeError):
-            return 0.0
+        return read_proxy_score(self)
 
 
 class StepResult(BaseModel):

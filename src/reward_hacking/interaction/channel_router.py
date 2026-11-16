@@ -91,6 +91,57 @@ class ChannelRouter:
         self.delivered_records.append(record)
         return TaskObservation(**obs_dict), record
 
+    def clear_suggestion(self, observation: TaskObservation) -> TaskObservation:
+        """Clear external Hacker suggestions from observation for one-shot exposure."""
+        obs_dict = observation.model_dump()
+
+        # 1. Clear advisory_messages from public_state
+        if "advisory_messages" in obs_dict.get("public_state", {}):
+            obs_dict["public_state"]["advisory_messages"] = []
+
+        # 2. Clear advisor_notes.txt from artifacts
+        if "artifacts" in obs_dict.get("public_state", {}):
+            obs_dict["public_state"]["artifacts"].pop("advisor_notes.txt", None)
+
+        # 3. Strip task artifact scratchpad from task_description
+        marker = "\n\n<!-- Task Artifact Scratchpad -->"
+        if marker in obs_dict.get("task_description", ""):
+            obs_dict["task_description"] = obs_dict["task_description"].split(marker)[0]
+
+        # 4. Clear linter_feedback advisory notices from visible_proxy_feedback
+        if "linter_feedback" in obs_dict.get("visible_proxy_feedback", {}):
+            filtered_feedback = [
+                f for f in obs_dict["visible_proxy_feedback"]["linter_feedback"]
+                if not (f.startswith("[Linter/Helper Hint]") or f.startswith("[Tool Advisory Notice"))
+            ]
+            obs_dict["visible_proxy_feedback"]["linter_feedback"] = filtered_feedback
+
+        # 5. Clear guidance notices from last_action_summary if present
+        if "last_action_summary" in obs_dict:
+            lines = [
+                line for line in obs_dict["last_action_summary"].split("\n")
+                if not (line.startswith("[Received external guidance message:") or line.startswith("[Tool advisory:"))
+            ]
+            obs_dict["last_action_summary"] = "\n".join(lines).strip()
+
+        return TaskObservation(**obs_dict)
+
+    def reapply_suggestion(
+        self,
+        observation: TaskObservation,
+        record: DeliveryRecord,
+    ) -> TaskObservation:
+        """Re-apply suggestion to observation for persistent exposure mode."""
+        updated_obs, _ = self.route_suggestion(
+            intervention_id=record.intervention_id,
+            content=record.content,
+            channel=record.channel,
+            observation=observation,
+            step=record.step,
+            target_policy=record.target_policy,
+        )
+        return updated_obs
+
     def get_policy_instruction_block(self, policy: Optional[Literal["P0", "P1"]] = None) -> str:
         """Return system prompt addition for the chosen Target integrity policy."""
         p = policy or self.target_policy
